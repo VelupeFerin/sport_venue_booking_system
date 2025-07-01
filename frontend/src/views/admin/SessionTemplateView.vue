@@ -10,18 +10,23 @@
         <div class="section-header">
           <h2>场次模板配置</h2>
           <div class="header-actions">
-            <el-button @click="showImportDialog = true" type="info" size="small">
-              <el-icon><Upload /></el-icon>
-              导入模板
-            </el-button>
-            <el-button @click="exportTemplates" type="success" size="small">
-              <el-icon><Download /></el-icon>
-              导出模板
-            </el-button>
-            <el-button @click="showAddCourtDialog = true" type="primary" size="small">
-              <el-icon><Plus /></el-icon>
-              添加场地
-            </el-button>
+            <el-checkbox v-model="showAllTimeSlots" class="time-slots-checkbox">
+              显示全部时段
+            </el-checkbox>
+            <div class="action-buttons">
+              <el-button @click="showImportDialog = true" type="info" size="small">
+                <el-icon><Upload /></el-icon>
+                导入模板
+              </el-button>
+              <el-button @click="exportTemplates" type="success" size="small">
+                <el-icon><Download /></el-icon>
+                导出模板
+              </el-button>
+              <el-button @click="showAddCourtDialog = true" type="primary" size="small">
+                <el-icon><Plus /></el-icon>
+                添加场地
+              </el-button>
+            </div>
           </div>
         </div>
         
@@ -31,16 +36,16 @@
             :sessions="templateSessions" 
             :selected-sessions="selectedTemplates"
             :is-admin-mode="true"
-            :business-hours="businessHoursConfig"
+            :business-hours="timeSlotsConfig"
             @session-select="handleTemplateSelect"
           />
         </div>
         
-        <!-- 批量操作 -->
+        <!-- 操作 -->
         <div v-if="selectedTemplates.length > 0" class="batch-actions">
-          <h3>批量操作 (已选择 {{ selectedTemplates.length }} 个模板)</h3>
+          <h3>{{ selectedTemplates.length === 1 ? '操作' : '批量操作' }} (已选择 {{ selectedTemplates.length }} 个模板)</h3>
           <div class="batch-buttons">
-            <el-button @click="batchEdit" type="primary">批量编辑</el-button>
+            <el-button @click="batchEdit" type="primary">{{ selectedTemplates.length === 1 ? '编辑' : '批量编辑' }}</el-button>
           </div>
         </div>
         
@@ -78,34 +83,103 @@
     <!-- 编辑场次模板对话框 -->
     <el-dialog 
       v-model="showEditDialog" 
-      :title="editingTemplate && editingTemplate.selectedTemplates && editingTemplate.selectedTemplates.length > 1 ? '批量编辑场次模板' : '编辑场次模板'"
+      :title="editingTemplate && editingTemplate.selectedTemplates && editingTemplate.selectedTemplates.length === 1 ? '编辑场次模板' : '批量编辑场次模板'"
       width="500px"
     >
       <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
-        <el-form-item label="价格" prop="price">
-          <el-input-number 
-            v-model="editForm.price" 
-            :min="0" 
-            :precision="2" 
-            placeholder="请输入价格"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch v-model="editForm.isActive" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input 
-            v-model="editForm.note" 
-            type="textarea" 
-            :rows="3"
-            placeholder="请输入备注信息（可选）"
-          />
-        </el-form-item>
+        <!-- 单个场次编辑时显示正常表单 -->
+        <template v-if="!isBatchEdit">
+          <el-form-item label="价格" prop="price">
+            <el-input-number 
+              v-model="editForm.price" 
+              :min="0" 
+              :precision="2" 
+              placeholder="请输入价格"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-switch v-model="editForm.isActive" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input 
+              v-model="editForm.note" 
+              type="textarea" 
+              :rows="3"
+              placeholder="请输入备注信息（可选）"
+            />
+          </el-form-item>
+        </template>
+        
+        <!-- 批量编辑时显示条件编辑表单 -->
+        <template v-else>
+          <el-form-item label="价格">
+            <div v-if="!editPrice" class="edit-button-container">
+              <el-button @click="editPrice = true" type="primary" size="small">
+                <el-icon><Edit /></el-icon>
+                编辑价格
+              </el-button>
+              <span class="current-value">{{ shouldEditPrice ? `当前：¥${editForm.price}` : '当前：不修改' }}</span>
+            </div>
+            <div v-else class="edit-field-container">
+              <el-input-number 
+                v-model="editForm.price" 
+                :min="0" 
+                :precision="2" 
+                placeholder="请输入价格"
+                style="width: 100%"
+              />
+              <div class="field-actions">
+                <el-button @click="editPrice = false" size="small">取消</el-button>
+                <el-button @click="confirmPriceEdit" type="primary" size="small">确定</el-button>
+              </div>
+            </div>
+          </el-form-item>
+          
+          <el-form-item label="状态">
+            <div v-if="!editStatus" class="edit-button-container">
+              <el-button @click="editStatus = true" type="primary" size="small">
+                <el-icon><Edit /></el-icon>
+                编辑状态
+              </el-button>
+              <span class="current-value">{{ shouldEditStatus ? (editForm.isActive ? '当前：启用' : '当前：禁用') : '当前：不修改' }}</span>
+            </div>
+            <div v-else class="edit-field-container">
+              <el-switch v-model="editForm.isActive" />
+              <div class="field-actions">
+                <el-button @click="editStatus = false" size="small">取消</el-button>
+                <el-button @click="confirmStatusEdit" type="primary" size="small">确定</el-button>
+              </div>
+            </div>
+          </el-form-item>
+          
+          <el-form-item label="备注">
+            <div v-if="!editNote" class="edit-button-container">
+              <el-button @click="editNote = true" type="primary" size="small">
+                <el-icon><Edit /></el-icon>
+                编辑备注
+              </el-button>
+              <span class="current-value">{{ shouldEditNote ? `当前：${editForm.note || '无'}` : '当前：不修改' }}</span>
+            </div>
+            <div v-else class="edit-field-container">
+              <el-input 
+                v-model="editForm.note" 
+                type="textarea" 
+                :rows="3"
+                placeholder="请输入备注信息（可选）"
+              />
+              <div class="field-actions">
+                <el-button @click="editNote = false" size="small">取消</el-button>
+                <el-button @click="confirmNoteEdit" type="primary" size="small">确定</el-button>
+              </div>
+            </div>
+          </el-form-item>
+        </template>
       </el-form>
       
       <template #footer>
-        <div class="dialog-footer">
+        <div class="dialog-footer custom-footer">
+          <el-button @click="saveEdit" type="primary">保存</el-button>
           <el-button @click="showEditDialog = false">取消</el-button>
           <el-button 
             v-if="editingTemplate && editingTemplate.selectedTemplates && editingTemplate.selectedTemplates.length > 0" 
@@ -114,7 +188,6 @@
           >
             删除选中场次
           </el-button>
-          <el-button @click="saveEdit" type="primary">保存</el-button>
         </div>
       </template>
     </el-dialog>
@@ -150,7 +223,7 @@
 <script setup>
 import {computed, onMounted, ref} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {Download, Plus, Upload} from '@element-plus/icons-vue'
+import {Download, Plus, Upload, Edit} from '@element-plus/icons-vue'
 import AdminNav from '@/components/AdminNav.vue'
 import SessionTable from '@/components/SessionTable.vue'
 import {createTemplate, deleteTemplate, getTemplates, updateTemplate} from '@/api/admin'
@@ -164,6 +237,15 @@ const showImportDialog = ref(false)
 const showEditDialog = ref(false)
 const editingTemplate = ref(null)
 const businessHours = ref({ startHour: 0, endHour: 23 })
+const showAllTimeSlots = ref(false)
+
+// 批量编辑相关状态
+const editPrice = ref(false)
+const editStatus = ref(false)
+const editNote = ref(false)
+const shouldEditPrice = ref(false)
+const shouldEditStatus = ref(false)
+const shouldEditNote = ref(false)
 
 const courtFormRef = ref()
 const editFormRef = ref()
@@ -219,6 +301,27 @@ const businessHoursConfig = computed(() => {
     startHour: businessHours.value.startHour,
     endHour: businessHours.value.endHour
   }
+})
+
+// 计算时间范围配置（根据是否显示全部时段决定）
+const timeSlotsConfig = computed(() => {
+  if (showAllTimeSlots.value) {
+    // 显示全部时段：0-24小时（包含23:00-24:00）
+    return {
+      startHour: 0,
+      endHour: 24
+    }
+  } else {
+    // 显示营业时间
+    return businessHoursConfig.value
+  }
+})
+
+// 判断是否为批量编辑模式
+const isBatchEdit = computed(() => {
+  return editingTemplate.value && 
+         editingTemplate.value.selectedTemplates && 
+         editingTemplate.value.selectedTemplates.length > 1
 })
 
 onMounted(async () => {
@@ -316,6 +419,14 @@ const batchEdit = () => {
   
   // 设置编辑模式为批量编辑
   editingTemplate.value = { isBatchEdit: true, selectedTemplates: selectedTemplates.value }
+  
+  // 重置编辑状态
+  editPrice.value = false
+  editStatus.value = false
+  editNote.value = false
+  shouldEditPrice.value = false
+  shouldEditStatus.value = false
+  shouldEditNote.value = false
   
   // 如果只选中一个场次，自动加载其信息
   if (selectedTemplates.value.length === 1) {
@@ -418,16 +529,45 @@ const handleFileChange = (file) => {
 
 const saveEdit = async () => {
   try {
-    await editFormRef.value.validate()
+    // 单个场次编辑时进行表单验证
+    if (!isBatchEdit.value) {
+      await editFormRef.value.validate()
+    }
     
     // 统一使用批量编辑模式
     const promises = editingTemplate.value.selectedTemplates.map(async (template) => {
       const templateData = {
         courtName: template.court_name,
-        startTime: template.start_time.split('T')[1],
-        price: editForm.value.price,
-        isActive: editForm.value.isActive,
-        note: editForm.value.note
+        startTime: template.start_time.split('T')[1]
+      }
+      
+      // 批量编辑时，根据条件决定是否更新各个字段
+      if (isBatchEdit.value) {
+        // 价格字段：如果修改了使用新值，否则使用原值
+        if (shouldEditPrice.value) {
+          templateData.price = editForm.value.price
+        } else {
+          templateData.price = template.price
+        }
+        
+        // 状态字段：如果修改了使用新值，否则使用原值
+        if (shouldEditStatus.value) {
+          templateData.isActive = editForm.value.isActive
+        } else {
+          templateData.isActive = template.is_active
+        }
+        
+        // 备注字段：如果修改了使用新值，否则使用原值
+        if (shouldEditNote.value) {
+          templateData.note = editForm.value.note
+        } else {
+          templateData.note = template.note
+        }
+      } else {
+        // 单个场次编辑时，更新所有字段
+        templateData.price = editForm.value.price
+        templateData.isActive = editForm.value.isActive
+        templateData.note = editForm.value.note
       }
       
       if (template.isVirtual) {
@@ -452,12 +592,34 @@ const saveEdit = async () => {
     selectedTemplates.value = []
     showEditDialog.value = false
     editingTemplate.value = null
+    // 重置编辑状态
+    editPrice.value = false
+    editStatus.value = false
+    editNote.value = false
+    shouldEditPrice.value = false
+    shouldEditStatus.value = false
+    shouldEditNote.value = false
     await loadTemplates()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('保存失败')
     }
   }
+}
+
+const confirmPriceEdit = () => {
+  shouldEditPrice.value = true
+  editPrice.value = false
+}
+
+const confirmStatusEdit = () => {
+  shouldEditStatus.value = true
+  editStatus.value = false
+}
+
+const confirmNoteEdit = () => {
+  shouldEditNote.value = true
+  editNote.value = false
 }
 
 const handleDeleteTemplate = async () => {
@@ -565,6 +727,11 @@ const handleDeleteTemplate = async () => {
   gap: 8px;
   flex-shrink: 0;
   white-space: nowrap;
+  align-items: center;
+}
+
+.time-slots-checkbox {
+  margin-right: 8px;
 }
 
 .template-table-container {
@@ -597,8 +764,9 @@ const handleDeleteTemplate = async () => {
 
 .dialog-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
 }
 
 .dialog-footer .el-button {
@@ -653,21 +821,32 @@ const handleDeleteTemplate = async () => {
   }
   
   .header-actions {
-    gap: 6px;
+    gap: 12px;
+    flex-direction: column;
+    width: 100%;
   }
   
-  .header-actions .el-button {
+  .time-slots-checkbox {
+    margin-right: 0;
+    margin-bottom: 0;
+    align-self: flex-start;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+  }
+  
+  .action-buttons .el-button {
+    flex: 1;
     font-size: 12px;
     padding: 8px 12px;
+    min-width: 0;
   }
   
   .section-header h2 {
     font-size: 16px;
-  }
-  
-  .header-actions {
-    justify-content: center;
-    flex-wrap: wrap;
   }
   
   .batch-buttons {
@@ -735,5 +914,36 @@ const handleDeleteTemplate = async () => {
   color: #6c757d;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* 批量编辑相关样式 */
+.edit-button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.current-value {
+  color: #909399;
+  font-size: 12px;
+}
+
+.edit-field-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.custom-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
 }
 </style> 

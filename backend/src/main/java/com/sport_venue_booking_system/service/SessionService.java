@@ -83,7 +83,7 @@ public interface SessionService {
     boolean isSessionTableEmpty();
     
     /**
-     * 初始化场次（如果表为空则生成场次）
+     * 初始化场次（直接生成场次，如果完全相同的场次已存在则跳过）
      */
     void initializeSessionsIfEmpty();
 } 

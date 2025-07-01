@@ -81,16 +81,13 @@
           </div>
         </div>
         
-        <!-- 订单信息面板 -->
-        <div class="detail-card">
-          <h3>订单信息</h3>
-          <OrderCard
-            :order="order"
-            :venue-name="venueName"
-            :cancel-time-limit="4"
-            :show-actions="false"
-          />
-        </div>
+        <!-- 订单信息 -->
+        <OrderCard
+          :order="order"
+          :venue-name="venueName"
+          :cancel-time-limit="4"
+          :show-actions="false"
+        />
       </div>
       
       <div v-else-if="searched" class="no-result">

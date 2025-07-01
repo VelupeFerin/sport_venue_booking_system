@@ -27,7 +27,7 @@ public class SportVenueBookingSystemApplication implements CommandLineRunner {
         logger.info("应用启动完成，开始初始化场次...");
         
         try {
-            // 检查场次表是否为空，如果为空则初始化场次
+            // 初始化场次，如果完全相同的场次已存在则跳过
             sessionService.initializeSessionsIfEmpty();
             logger.info("场次初始化完成");
         } catch (Exception e) {

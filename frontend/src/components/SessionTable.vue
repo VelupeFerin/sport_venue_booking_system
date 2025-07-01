@@ -141,7 +141,7 @@ const getSessionStatus = (courtName, startTime) => {
 
 const getSessionPrice = (courtName, startTime) => {
   const session = getSession(courtName, startTime)
-  // 管理员模式下显示所有价格，用户模式下只显示可预约的价格
+  // 管理员模式下显示所有价格，用户模式下显示可预约和已预约的价格
   if (props.isAdminMode) {
     if (session) {
       return session.price || null
@@ -152,7 +152,8 @@ const getSessionPrice = (courtName, startTime) => {
       return selectedVirtual?.price || null
     }
   }
-  if (!session || session.is_booked || !session.is_active) return null
+  // 用户模式下显示可预约和已预约的价格，不显示不可预约的价格
+  if (!session || !session.is_active) return null
   return session.price
 }
 
@@ -309,11 +310,13 @@ const handleCellClick = (courtName, startTime) => {
   gap: 4px;
   height: 100%;
   justify-content: center;
+  align-items: center;
   position: relative;
+  padding: 4px;
 }
 
 .session-status {
-  font-size: 12px;
+  font-size: 14px; /* 可以调整这个值来改变字体大小 */
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
@@ -327,13 +330,16 @@ const handleCellClick = (courtName, startTime) => {
 }
 
 .session-note {
-  font-size: 10px;
+  font-size: 12px; /* 可以调整这个值来改变字体大小 */
   color: #666;
   line-height: 1.2;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  word-wrap: break-word;
+  word-break: break-all;
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin: 0 auto;
 }
 
 .selected-indicator {
@@ -392,6 +398,11 @@ const handleCellClick = (courtName, startTime) => {
   color: #fa8c16;
 }
 
+.booked .session-price {
+  color: #999;
+  text-decoration: line-through;
+}
+
 .booked {
   cursor: not-allowed;
 }
@@ -408,6 +419,11 @@ const handleCellClick = (courtName, startTime) => {
 .unavailable .session-status {
   background: #d9d9d9;
   color: #666;
+}
+
+.unavailable .session-price {
+  color: #999;
+  font-style: italic;
 }
 
 .unavailable {
@@ -428,6 +444,13 @@ const handleCellClick = (courtName, startTime) => {
   transform: scale(1.02);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: #f0f0f0;
+}
+
+/* 管理员模式下不可预约场次的价格样式 */
+.session-cell.unavailable.admin-mode .session-price {
+  color: #666;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* 确保选中状态覆盖所有其他状态 */
@@ -470,10 +493,11 @@ const handleCellClick = (courtName, startTime) => {
   .session-cell {
     height: 60px;
     min-width: 80px;
+    padding: 4px !important;
   }
   
   .session-status {
-    font-size: 10px;
+    font-size: 12px; /* 移动端场地状态字体大小 */
     padding: 1px 4px;
   }
   
@@ -482,8 +506,9 @@ const handleCellClick = (courtName, startTime) => {
   }
   
   .session-note {
-    font-size: 9px;
-    max-width: 60px;
+    font-size: 11px; /* 移动端场地备注字体大小 */
+    max-width: 100%;
+    padding: 1px 2px;
   }
   
   .selected-indicator {

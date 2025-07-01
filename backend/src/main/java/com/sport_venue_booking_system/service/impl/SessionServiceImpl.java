@@ -194,21 +194,17 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public void initializeSessionsIfEmpty() {
-        if (isSessionTableEmpty()) {
-            logger.info("场次表为空，开始初始化场次...");
-            
-            // 清除过期场次
-            clearExpiredSessions();
-            
-            // 生成次日场次
-            boolean success = generateNextDaySessions();
-            if (success) {
-                logger.info("场次初始化完成");
-            } else {
-                logger.error("场次初始化失败");
-            }
+        logger.info("开始初始化场次（直接生成，跳过已存在的场次）...");
+        
+        // 清除过期场次
+        clearExpiredSessions();
+        
+        // 生成次日场次
+        boolean success = generateNextDaySessions();
+        if (success) {
+            logger.info("场次初始化完成");
         } else {
-            logger.info("场次表不为空，跳过初始化");
+            logger.error("场次初始化失败");
         }
     }
 } 

@@ -138,6 +138,14 @@ const userStore = useUserStore()
 // 检查是否已登录
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
+// 格式化日期为 YYYY-MM-DD 格式（使用本地时间）
+const formatDateToLocalString = (date) => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // 选中的日期
 const selectedDate = ref('')
 
@@ -175,7 +183,8 @@ const availableDates = computed(() => {
   for (let i = 0; i < 2; i++) {
     const date = new Date()
     date.setDate(date.getDate() + i)
-    const dateStr = date.toISOString().split('T')[0]
+    
+    const dateStr = formatDateToLocalString(date)
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const day = date.getDate().toString().padStart(2, '0')
     const week = weekdays[date.getDay()]
@@ -194,7 +203,7 @@ const availableDates = computed(() => {
 // 初始化日期为今天
 onMounted(() => {
   const today = new Date()
-  selectedDate.value = today.toISOString().split('T')[0]
+  selectedDate.value = formatDateToLocalString(today)
   loadBusinessHours() // loadBusinessHours内部会调用loadSessions
   checkPendingOrders() // 检查是否有未核验的订单
 })
