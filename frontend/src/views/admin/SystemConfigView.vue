@@ -72,7 +72,6 @@
         </el-form>
         
         <div class="form-actions">
-          <el-button @click="resetForm" size="large">重置</el-button>
           <el-button @click="saveConfig" type="primary" size="large">
             <el-icon><Check /></el-icon>
             保存配置
@@ -176,9 +175,7 @@ const saveConfig = async () => {
   }
 }
 
-const resetForm = () => {
-  loadConfig()
-}
+
 </script>
 
 <style scoped>

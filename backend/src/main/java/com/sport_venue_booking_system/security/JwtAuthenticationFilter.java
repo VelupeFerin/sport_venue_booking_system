@@ -42,10 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwt = authHeader.substring(7);
             try {
                 username = jwtUtil.getUsernameFromToken(jwt);
+                logger.debug("Extracted username from JWT: " + username);
             } catch (Exception e) {
                 // Token无效，记录日志但不抛出异常
                 logger.debug("Invalid JWT token: " + e.getMessage());
             }
+        } else {
+            logger.debug("No Authorization header or invalid format");
         }
         
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -64,6 +67,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 logger.error("Error processing JWT authentication for user: " + username, e);
             }
+        } else if (username == null) {
+            logger.debug("No username extracted from JWT token");
+        } else {
+            logger.debug("User already authenticated: " + username);
         }
         
         filterChain.doFilter(request, response);

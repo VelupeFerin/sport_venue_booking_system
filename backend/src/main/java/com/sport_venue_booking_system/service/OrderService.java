@@ -2,6 +2,7 @@ package com.sport_venue_booking_system.service;
 
 import com.sport_venue_booking_system.dto.OrderVerificationResponse;
 import com.sport_venue_booking_system.entity.Order;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -16,6 +17,7 @@ public interface OrderService {
     
     // 用户订单相关方法
     List<OrderVerificationResponse> getUserOrders(Long userId);
+    Page<OrderVerificationResponse> getUserOrders(Long userId, int page, int size);
     boolean cancelUserOrder(Long orderId, Long userId);
     
     // 创建订单方法

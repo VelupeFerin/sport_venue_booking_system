@@ -12,6 +12,8 @@ import com.sport_venue_booking_system.service.OrderService;
 import com.sport_venue_booking_system.service.SessionService;
 import com.sport_venue_booking_system.service.SystemConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -160,8 +163,51 @@ public class OrderServiceImpl implements OrderService {
                             sessionInfos
                     );
                 })
-                .filter(response -> response != null)
+                .filter(Objects::nonNull)
                 .toList();
+    }
+    
+    @Override
+    public Page<OrderVerificationResponse> getUserOrders(Long userId, int page, int size) {
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        Page<Order> userOrdersPage = orderRepository.findByUserIdOrderByCreateTimeDesc(userId, pageable);
+
+        Page<OrderVerificationResponse> responsePage = userOrdersPage.map(order -> {
+            User user = userRepository.findById(order.getUserId()).orElse(null);
+            if (user == null) {
+                return null;
+            }
+
+            List<OrderSession> orderSessions = orderSessionRepository.findByOrderId(order.getId());
+
+            // 构建用户信息
+            OrderVerificationResponse.UserInfo userInfo = new OrderVerificationResponse.UserInfo(
+                    user.getUsername(),
+                    user.getPhone()
+            );
+
+            // 构建所有场次信息
+            List<OrderVerificationResponse.SessionInfo> sessionInfos = orderSessions.stream()
+                    .map(orderSession -> new OrderVerificationResponse.SessionInfo(
+                            orderSession.getCourtName(),
+                            orderSession.getStartTime(),
+                            orderSession.getPrice()
+                    ))
+                    .toList();
+
+            // 构建响应对象
+            return new OrderVerificationResponse(
+                    order.getId().toString(),
+                    order.getTotalPrice(),
+                    order.getCreateTime(),
+                    order.getVerifyTime(),
+                    order.getStatus().name(),
+                    userInfo,
+                    sessionInfos
+            );
+        });
+
+        return responsePage;
     }
     
     @Override

@@ -2,32 +2,18 @@
   <div class="home-container">
     <div class="header">
       <div class="header-content">
-        <h1>运动场馆预订系统</h1>
+        <h1>{{ venueName }}预订系统</h1>
         <div class="user-info" v-if="userStore.isLoggedIn">
           <span>欢迎，{{ userStore.username }}</span>
-          <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
-        </div>
-        <div class="auth-buttons" v-else>
-          <el-button type="primary" size="small" @click="$router.push('/login')">登录</el-button>
-          <el-button type="success" size="small" @click="$router.push('/register')">注册</el-button>
+          <el-button class="logout-btn" size="small" @click="handleLogout">退出登录</el-button>
         </div>
       </div>
     </div>
     
     <div class="main-content">
-      <!-- 已登录用户显示 -->
-      <div v-if="userStore.isLoggedIn" class="welcome-card">
-        <h2>欢迎使用运动场馆预订系统</h2>
-        <p>这是一个临时的主页，后续将添加更多功能</p>
-        <div class="user-details">
-          <p><strong>用户名：</strong>{{ userStore.username }}</p>
-          <p><strong>用户类型：</strong>{{ userStore.isAdmin ? '商家(管理员)' : '普通用户' }}</p>
-        </div>
-      </div>
-      
-      <!-- 未登录用户显示 -->
-      <div v-else class="welcome-card">
-        <h2>欢迎使用运动场馆预订系统</h2>
+      <!-- 统一显示欢迎页面 -->
+      <div class="welcome-card">
+        <h2>欢迎使用{{ venueName }}预订系统</h2>
         <p>专业的运动场馆在线预约平台，为您提供便捷的场地预订服务</p>
         <div class="feature-list">
           <div class="feature-item">
@@ -52,7 +38,9 @@
             </div>
           </div>
         </div>
-        <div class="cta-buttons">
+
+        <!-- 未登录用户显示登录注册按钮 -->
+        <div v-if="!userStore.isLoggedIn" class="cta-buttons">
           <el-button type="primary" size="large" @click="$router.push('/login')">
             立即登录
           </el-button>
@@ -69,20 +57,45 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Calendar, Document, User } from '@element-plus/icons-vue'
 import BottomNav from '../components/BottomNav.vue'
 import { useUserStore } from '../store/user'
+import { publicApi } from '../api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+const venueName = ref('运动场馆')
 
 const handleLogout = () => {
   userStore.clearUserInfo()
   ElMessage.success('已退出登录')
   router.push('/home')
 }
+
+// 获取系统配置中的场馆名称
+const loadVenueName = async () => {
+  try {
+    const response = await publicApi.getSystemConfig()
+    if (response.success && response.data) {
+      // 从系统配置中获取场馆名称
+      const configs = response.data
+      if (configs.venue_name) {
+        venueName.value = configs.venue_name
+      }
+    }
+  } catch (error) {
+    console.error('获取场馆名称失败:', error)
+    // 使用默认名称
+    venueName.value = '运动场馆'
+  }
+}
+
+onMounted(() => {
+  loadVenueName()
+})
 </script>
 
 <style scoped>
@@ -114,10 +127,23 @@ const handleLogout = () => {
   font-weight: 600;
 }
 
-.user-info, .auth-buttons {
+.user-info {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.logout-btn {
+  background: white !important;
+  color: #FF6633 !important;
+  border: 1px solid white !important;
+  transition: all 0.3s ease !important;
+}
+
+.logout-btn:hover {
+  background: #f0f0f0 !important;
+  color: #e55a2b !important;
+  border-color: #f0f0f0 !important;
 }
 
 .user-info span {
@@ -211,6 +237,7 @@ const handleLogout = () => {
   gap: 16px;
   justify-content: center;
   margin-top: 32px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {
@@ -219,8 +246,9 @@ const handleLogout = () => {
   }
   
   .cta-buttons {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    gap: 12px;
   }
 }
 </style>

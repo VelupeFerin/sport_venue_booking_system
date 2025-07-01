@@ -1,6 +1,16 @@
 <template>
   <div class="session-table-container">
-    <div class="table-wrapper">
+    <!-- 当没有场次数据时显示提示信息 -->
+    <div v-if="!hasSessions" class="no-sessions">
+      <el-empty description="暂无场次" :image-size="120">
+        <template #image>
+          <el-icon class="empty-icon"><Calendar /></el-icon>
+        </template>
+      </el-empty>
+    </div>
+    
+    <!-- 有场次数据时显示表格 -->
+    <div v-else class="table-wrapper">
       <table class="session-table">
         <thead>
           <tr>
@@ -47,7 +57,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Check } from '@element-plus/icons-vue'
+import { Check, Calendar } from '@element-plus/icons-vue'
 
 const props = defineProps({
   sessions: {
@@ -73,6 +83,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['session-select'])
+
+// 判断是否有场次数据
+const hasSessions = computed(() => {
+  return props.sessions && props.sessions.length > 0
+})
 
 const timeSlots = computed(() => {
   // 完全依赖营业时间配置
@@ -213,6 +228,21 @@ const handleCellClick = (courtName, startTime) => {
 .session-table-container {
   width: 100%;
   overflow-x: auto;
+}
+
+.no-sessions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+  font-size: 60px;
+  color: #c0c4cc;
 }
 
 .table-wrapper {

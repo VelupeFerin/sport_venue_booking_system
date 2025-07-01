@@ -7,7 +7,6 @@ import com.sport_venue_booking_system.dto.SessionTemplateRequest;
 import com.sport_venue_booking_system.entity.SessionTemplate;
 import com.sport_venue_booking_system.service.OrderService;
 import com.sport_venue_booking_system.service.SessionTemplateService;
-import com.sport_venue_booking_system.service.SystemConfigService;
 import com.sport_venue_booking_system.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +30,6 @@ public class AdminController {
     
     @Autowired
     private SessionTemplateService sessionTemplateService;
-    
-    @Autowired
-    private SystemConfigService systemConfigService;
     
     @GetMapping("/stats")
     public ApiResponse<Map<String, Object>> getStats() {
@@ -135,24 +131,5 @@ public class AdminController {
         }
     }
     
-    // 系统配置API
-    @GetMapping("/config")
-    public ApiResponse<Map<String, String>> getConfig() {
-        try {
-            Map<String, String> configs = systemConfigService.getAllConfigs();
-            return ApiResponse.success(configs);
-        } catch (Exception e) {
-            return ApiResponse.error(ResultCode.INTERNAL_ERROR, "获取配置失败: " + e.getMessage());
-        }
-    }
-    
-    @PutMapping("/config")
-    public ApiResponse<String> updateConfig(@RequestBody Map<String, String> configs) {
-        try {
-            systemConfigService.updateConfigs(configs);
-            return ApiResponse.success("配置更新成功");
-        } catch (Exception e) {
-            return ApiResponse.error(ResultCode.INTERNAL_ERROR, "更新配置失败: " + e.getMessage());
-        }
-    }
+
 } 

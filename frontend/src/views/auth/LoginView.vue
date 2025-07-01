@@ -62,7 +62,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import authApi from '../../api/auth'
-import { useUserStore } from '../../store/user'
+import { useUserStore } from '@/store/user.js'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -91,6 +91,35 @@ const handleLogin = async () => {
     const response = await authApi.login(loginForm)
     
     if (response.success) {
+      console.log('Login successful, token received:', response.data.token.substring(0, 20) + '...')
+      
+      // 验证token字符
+      const token = response.data.token
+      let hasInvalidChar = false
+      
+      // 检查JWT格式
+      if (!token.startsWith('eyJ')) {
+        console.error('Token does not start with "eyJ" (invalid JWT format)')
+        hasInvalidChar = true
+      }
+      
+      for (let i = 0; i < token.length; i++) {
+        const c = token.charAt(i)
+        if (c > 127) {
+          console.error(`Token contains non-ASCII character at position ${i}: ${c} (code: ${c.charCodeAt(0)})`)
+          hasInvalidChar = true
+        }
+        if (!/[a-zA-Z0-9\-_.=]/.test(c)) {
+          console.error(`Token contains invalid character at position ${i}: ${c} (code: ${c.charCodeAt(0)})`)
+          hasInvalidChar = true
+        }
+      }
+      
+      if (hasInvalidChar) {
+        ElMessage.error('登录失败：token格式异常')
+        return
+      }
+      
       userStore.setUserInfo({
         token: response.data.token,
         username: response.data.username,
@@ -103,6 +132,7 @@ const handleLogin = async () => {
       ElMessage.error(response.message)
     }
   } catch (error) {
+    console.error('Login error:', error)
     if (error.response && error.response.data) {
       ElMessage.error(error.response.data.message)
     } else {

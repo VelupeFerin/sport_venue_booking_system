@@ -78,7 +78,7 @@
               <el-input 
                 v-model="userForm.oldPassword" 
                 type="password"
-                placeholder="请输入旧密码（不修改密码可留空）"
+                placeholder="请输入旧密码"
                 :prefix-icon="Lock"
                 show-password
                 clearable
@@ -89,7 +89,7 @@
               <el-input 
                 v-model="userForm.newPassword" 
                 type="password"
-                placeholder="请输入新密码（不修改密码可留空）"
+                placeholder="请输入新密码"
                 :prefix-icon="Lock"
                 show-password
                 clearable
@@ -252,11 +252,9 @@ const loadUserInfo = async () => {
       userInfo.isAdmin = user.isAdmin
     }
   } catch (error) {
-    if (error.response && error.response.status === 401) {
-      // 认证失败，跳转到登录页
-      ElMessage.error('登录已过期，请重新登录')
-      router.push('/login')
-    } else {
+    console.error('Error loading user info:', error)
+    // API拦截器已经处理了401错误，这里只需要处理其他错误
+    if (error.response && error.response.status !== 401) {
       ElMessage.error('获取用户信息失败')
     }
   }
@@ -310,15 +308,18 @@ const handleSaveInfo = async () => {
       }
       
       // 检查是否返回了新token（用户名更新时）
-      if (response.data && typeof response.data === 'string') {
-        // 更新token
+      if (response.data && typeof response.data === 'string' && response.data.startsWith('eyJ')) {
+        // 只有以'eyJ'开头的字符串才是JWT token
+        console.log('Received new token, updating user info')
         userStore.setUserInfo({
           token: response.data,
           username: userForm.username,
           isAdmin: userStore.isAdmin
         })
-        ElMessage.success('用户名更新成功，已自动更新登录状态')
+        ElMessage.success('用户名更新成功')
       } else {
+        // 用户名没有改变，只更新显示信息，不更新token
+        console.log('No token received, keeping existing token')
         ElMessage.success('个人信息更新成功')
       }
       
@@ -339,6 +340,37 @@ const handleSaveInfo = async () => {
 }
 
 onMounted(() => {
+  // 清理可能损坏的localStorage数据
+  const storedToken = localStorage.getItem('token')
+  if (storedToken) {
+    let hasInvalidChar = false
+    
+    // 检查JWT格式
+    if (!storedToken.startsWith('eyJ')) {
+      console.warn('Token does not start with "eyJ" (invalid JWT format)')
+      hasInvalidChar = true
+    }
+    
+    for (let i = 0; i < storedToken.length; i++) {
+      const c = storedToken.charAt(i)
+      if (c > 127 || !/[a-zA-Z0-9\-_.=]/.test(c)) {
+        hasInvalidChar = true
+        break
+      }
+    }
+    
+    if (hasInvalidChar) {
+      console.warn('Invalid token found in localStorage, clearing all user data')
+      localStorage.removeItem('token')
+      localStorage.removeItem('username')
+      localStorage.removeItem('isAdmin')
+      userStore.clearUserInfo()
+      ElMessage.warning('检测到登录状态异常，已自动清理，请重新登录')
+      router.push('/login')
+      return
+    }
+  }
+  
   loadUserInfo()
 })
 </script>

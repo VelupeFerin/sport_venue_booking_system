@@ -10,15 +10,15 @@
         <div class="section-header">
           <h2>场次模板配置</h2>
           <div class="header-actions">
-            <el-button @click="showImportDialog = true" type="info">
+            <el-button @click="showImportDialog = true" type="info" size="small">
               <el-icon><Upload /></el-icon>
               导入模板
             </el-button>
-            <el-button @click="exportTemplates" type="success">
+            <el-button @click="exportTemplates" type="success" size="small">
               <el-icon><Download /></el-icon>
               导出模板
             </el-button>
-            <el-button @click="showAddCourtDialog = true" type="primary">
+            <el-button @click="showAddCourtDialog = true" type="primary" size="small">
               <el-icon><Plus /></el-icon>
               添加场地
             </el-button>
@@ -148,13 +148,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Upload, Download } from '@element-plus/icons-vue'
+import {computed, onMounted, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Download, Plus, Upload} from '@element-plus/icons-vue'
 import AdminNav from '@/components/AdminNav.vue'
 import SessionTable from '@/components/SessionTable.vue'
-import { getTemplates, createTemplate, updateTemplate, deleteTemplate, getConfig } from '@/api/admin'
-import { parseBusinessHours } from '@/utils/timeUtils'
+import {createTemplate, deleteTemplate, getTemplates, updateTemplate} from '@/api/admin'
+import {publicApi} from '@/api/user'
+import {parseBusinessHours} from '@/utils/timeUtils'
 
 const templates = ref([])
 const selectedTemplates = ref([])
@@ -192,14 +193,14 @@ const editRules = {
 
 // 将模板数据转换为SessionTable需要的格式
 const templateSessions = computed(() => {
-  const sessions = templates.value.map(template => {
+  return templates.value.map(template => {
     // 确保时间格式正确
     let startTime = template.start_time
     if (startTime && !startTime.includes('T')) {
       // 如果时间格式是 "HH:00:00"，转换为完整的日期时间
       startTime = `2024-01-01T${startTime}`
     }
-    
+
     return {
       id: template.id,
       court_name: template.court_name, // 使用后端返回的下划线格式
@@ -210,8 +211,6 @@ const templateSessions = computed(() => {
       note: template.note
     }
   })
-  
-  return sessions
 })
 
 // 计算营业时间范围
@@ -246,7 +245,7 @@ const loadTemplates = async () => {
 
 const loadBusinessHours = async () => {
   try {
-    const response = await getConfig()
+    const response = await publicApi.getSystemConfig()
     if (response.code === 200) {
       const config = response.data
       
@@ -261,11 +260,11 @@ const loadBusinessHours = async () => {
         }
       }
     } else {
-      console.warn('加载营业时间失败，使用默认值')
+      console.warn('加载系统配置失败，使用默认值')
       businessHours.value = { startHour: 9, endHour: 21 }
     }
   } catch (error) {
-    console.warn('加载营业时间失败，使用默认值:', error)
+    console.warn('加载系统配置失败，使用默认值:', error)
     businessHours.value = { startHour: 9, endHour: 21 }
   }
 }
@@ -563,7 +562,9 @@ const handleDeleteTemplate = async () => {
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .template-table-container {
@@ -649,6 +650,15 @@ const handleDeleteTemplate = async () => {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
+  }
+  
+  .header-actions {
+    gap: 6px;
+  }
+  
+  .header-actions .el-button {
+    font-size: 12px;
+    padding: 8px 12px;
   }
   
   .section-header h2 {

@@ -77,15 +77,12 @@
             </el-button>
           </div>
           
-          <!-- 预约说明（可折叠） -->
-          <div class="booking-tips-collapsible">
-            <div class="tips-header" @click="toggleTips">
+          <!-- 预约说明 -->
+          <div class="booking-tips">
+            <div class="tips-header">
               <h3>预约说明</h3>
-              <el-icon :class="{ 'is-reverse': showTips }">
-                <ArrowDown />
-              </el-icon>
             </div>
-            <div v-show="showTips" class="tips-content">
+            <div class="tips-content">
               <ul>
                 <li>点击可预约的场次进行选择</li>
                 <li>已预约的场次不可重复预约</li>
@@ -130,7 +127,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowDown } from '@element-plus/icons-vue'
 import BottomNav from '../../components/BottomNav.vue'
 import SessionTable from '../../components/SessionTable.vue'
 import { useUserStore } from '../../store/user'
@@ -150,9 +146,6 @@ const sessions = ref([])
 
 // 选中的场次
 const selectedSessions = ref([])
-
-// 是否显示预约说明
-const showTips = ref(false)
 
 // 确认预约状态
 const confirming = ref(false)
@@ -209,8 +202,8 @@ onMounted(() => {
 // 加载营业时间配置
 const loadBusinessHours = async () => {
   try {
-    // 使用公开API获取营业时间配置，这样未登录用户也能获取到
-    const response = await publicApi.getBusinessHours()
+    // 使用公开API获取系统配置，这样未登录用户也能获取到
+    const response = await publicApi.getSystemConfig()
     
     if (response.code === 200) {
       const config = response.data
@@ -232,7 +225,7 @@ const loadBusinessHours = async () => {
       }
     }
   } catch (error) {
-    console.warn('加载营业时间失败，使用默认值:', error)
+    console.warn('加载系统配置失败，使用默认值:', error)
     // 使用默认营业时间
     businessHours.value = { startHour: 9, endHour: 21 }
   }
@@ -312,11 +305,6 @@ const handleSessionSelect = (session) => {
     }
     selectedSessions.value.push(session)
   }
-}
-
-// 切换预约说明显示
-const toggleTips = () => {
-  showTips.value = !showTips.value
 }
 
 // 确认预约
@@ -517,23 +505,15 @@ const confirmBooking = async () => {
   font-weight: 500;
 }
 
-.booking-tips-collapsible {
+.booking-tips {
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e4e7ed;
 }
 
 .tips-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 16px 20px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.tips-header:hover {
-  background: #f0f0f0;
+  border-bottom: 1px solid #e4e7ed;
 }
 
 .tips-header h3 {
@@ -543,17 +523,8 @@ const confirmBooking = async () => {
   font-weight: 600;
 }
 
-.tips-header .el-icon {
-  transition: transform 0.3s ease;
-}
-
-.tips-header .el-icon.is-reverse {
-  transform: rotate(180deg);
-}
-
 .tips-content {
-  padding: 0 20px 16px 20px;
-  border-top: 1px solid #e4e7ed;
+  padding: 16px 20px;
 }
 
 .tips-content ul {

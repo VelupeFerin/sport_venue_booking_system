@@ -6,7 +6,6 @@ import com.sport_venue_booking_system.dto.OrderVerificationResponse;
 import com.sport_venue_booking_system.dto.UserUpdateRequest;
 import com.sport_venue_booking_system.entity.User;
 import com.sport_venue_booking_system.service.OrderService;
-import com.sport_venue_booking_system.service.SystemConfigService;
 import com.sport_venue_booking_system.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,9 +28,6 @@ public class UserController {
     
     @Autowired
     private OrderService orderService;
-    
-    @Autowired
-    private SystemConfigService systemConfigService;
 
     @GetMapping("/info")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
@@ -40,15 +36,22 @@ public class UserController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
             
+            // 添加日志记录
+            System.out.println("Getting user info for username: " + username);
+            
             User user = userService.getUserInfo(username);
             if (user == null) {
+                System.out.println("User not found for username: " + username);
                 return ApiResponse.error(ResultCode.USER_NOT_FOUND, "用户不存在");
             }
             
             // 不返回密码信息
             user.setPassword(null);
+            System.out.println("Successfully retrieved user info for: " + username);
             return ApiResponse.success(user);
         } catch (Exception e) {
+            System.out.println("Error getting user info: " + e.getMessage());
+            e.printStackTrace();
             return ApiResponse.error(ResultCode.FAIL, "获取用户信息失败: " + e.getMessage());
         }
     }
@@ -60,24 +63,35 @@ public class UserController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUsername = authentication.getName();
             
+            // 添加日志记录
+            System.out.println("Updating user info for username: " + currentUsername);
+            System.out.println("Request data: " + request);
+            
             String result = userService.updateUserInfo(currentUsername, request);
             if (result == null) {
+                System.out.println("User info updated successfully for: " + currentUsername);
                 return ApiResponse.success("用户信息更新成功");
             } else if (result.startsWith("NEW_TOKEN:")) {
                 // 用户名发生变化，返回新的token
                 String newToken = result.substring(10);
+                System.out.println("Username changed, new token generated for: " + currentUsername);
                 return ApiResponse.success("用户信息更新成功", newToken);
             } else {
+                System.out.println("User info update failed: " + result);
                 return ApiResponse.error(ResultCode.FAIL, result);
             }
         } catch (Exception e) {
+            System.out.println("Error updating user info: " + e.getMessage());
+            e.printStackTrace();
             return ApiResponse.error(ResultCode.FAIL, "更新用户信息失败: " + e.getMessage());
         }
     }
     
     @GetMapping("/orders")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ApiResponse<List<OrderVerificationResponse>> getUserOrders() {
+    public ApiResponse<Object> getUserOrders(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
@@ -87,8 +101,16 @@ public class UserController {
                 return ApiResponse.error(ResultCode.USER_NOT_FOUND, "用户不存在");
             }
             
-            List<OrderVerificationResponse> orders = orderService.getUserOrders(user.getId());
-            return ApiResponse.success(orders);
+            // 如果提供了分页参数，使用分页查询
+            if (page != null && size != null) {
+                org.springframework.data.domain.Page<OrderVerificationResponse> ordersPage = 
+                    orderService.getUserOrders(user.getId(), page, size);
+                return ApiResponse.success(ordersPage);
+            } else {
+                // 保持向后兼容，返回所有订单
+                List<OrderVerificationResponse> orders = orderService.getUserOrders(user.getId());
+                return ApiResponse.success(orders);
+            }
         } catch (Exception e) {
             return ApiResponse.error(ResultCode.FAIL, "获取订单列表失败: " + e.getMessage());
         }
@@ -155,20 +177,5 @@ public class UserController {
         }
     }
 
-    // 获取营业时间配置（公开API，无需认证）
-    @GetMapping("/business-hours")
-    public ApiResponse<Map<String, String>> getBusinessHours() {
-        try {
-            Map<String, String> configs = systemConfigService.getAllConfigs();
-            // 返回营业时间、取消时间限制和最大场次数相关的配置
-            Map<String, String> businessConfig = Map.of(
-                "business_hours", configs.getOrDefault("business_hours", "09:00-21:00"),
-                "cancel_time_limit", configs.getOrDefault("cancel_time_limit", "4"),
-                "max_order_sessions", configs.getOrDefault("max_order_sessions", "3")
-            );
-            return ApiResponse.success(businessConfig);
-        } catch (Exception e) {
-            return ApiResponse.error(ResultCode.INTERNAL_ERROR, "获取营业时间配置失败: " + e.getMessage());
-        }
-    }
+
 } 

@@ -28,44 +28,50 @@
       </div>
       
       <div v-if="order" class="order-details">
+        <!-- 核验操作面板 -->
         <div class="detail-card">
-          <h3>订单信息</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="label">订单号:</span>
-              <span class="value">{{ order.orderNumber }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">订单状态:</span>
-              <span class="value">
-                <el-tag :type="getStatusType(order.status)">
-                  {{ getStatusText(order.status) }}
-                </el-tag>
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="label">创建时间:</span>
-              <span class="value">{{ formatDate(order.createTime) }}</span>
-            </div>
-            <div v-if="order.verifyTime" class="info-item">
-              <span class="label">核验时间:</span>
-              <span class="value">{{ formatDate(order.verifyTime) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">订单金额:</span>
-              <span class="value price">¥{{ order.totalPrice }}</span>
-            </div>
+          <h3>核验操作</h3>
+          <div class="action-buttons">
+            <el-button 
+              v-if="!order.verifyTime && order.status === 'pending'" 
+              @click="verifyOrder" 
+              type="success" 
+              size="default"
+              class="primary-action"
+            >
+              <el-icon><Check /></el-icon>
+              确认核验
+            </el-button>
+            <el-button 
+              v-if="order.verifyTime && order.status === 'completed'" 
+              type="success" 
+              size="default"
+              disabled
+              class="status-button"
+            >
+              <el-icon><Check /></el-icon>
+              订单已核验
+            </el-button>
+            <el-button 
+              v-if="order.status === 'cancelled'" 
+              type="info" 
+              size="default" 
+              disabled
+            >
+              订单已退订
+            </el-button>
           </div>
         </div>
         
+        <!-- 用户信息面板 -->
         <div class="detail-card">
           <h3>用户信息</h3>
-          <div class="info-grid" v-if="order.user">
-            <div class="info-item">
+          <div class="user-info-list" v-if="order.user">
+            <div class="user-info-item">
               <span class="label">用户名:</span>
               <span class="value">{{ order.user.username }}</span>
             </div>
-            <div class="info-item">
+            <div class="user-info-item">
               <span class="label">手机号:</span>
               <span class="value">{{ order.user.phone }}</span>
             </div>
@@ -75,71 +81,15 @@
           </div>
         </div>
         
+        <!-- 订单信息面板 -->
         <div class="detail-card">
-          <h3>场次信息</h3>
-          <div v-if="order.sessions && order.sessions.length > 0" class="sessions-list">
-            <div v-for="(session, index) in order.sessions" :key="index" class="session-item">
-              <div class="session-header">
-                <span class="session-number">场次 {{ index + 1 }}</span>
-              </div>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="label">场地:</span>
-                  <span class="value">{{ session.courtName }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">开始时间:</span>
-                  <span class="value">{{ formatDateTime(session.startTime) }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">结束时间:</span>
-                  <span class="value">{{ formatDateTime(getEndTime(session.startTime)) }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">价格:</span>
-                  <span class="value price">¥{{ session.price }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="no-data">
-            <p>场次信息不存在</p>
-          </div>
-        </div>
-        
-        <div class="verification-actions">
-          <h3>核验操作</h3>
-          <div class="action-buttons">
-            <el-button 
-              v-if="!order.verifyTime && order.status === 'pending'" 
-              @click="verifyOrder" 
-              type="success" 
-              size="large"
-            >
-              <el-icon><Check /></el-icon>
-              确认核验
-            </el-button>
-            <el-button 
-              v-if="!order.verifyTime && order.status === 'pending'" 
-              @click="showQRCode" 
-              type="warning" 
-              size="large"
-            >
-              查看二维码
-            </el-button>
-            <div v-if="order.verifyTime && order.status === 'completed'" class="status-info">
-              <el-icon><Check /></el-icon>
-              <span>订单已核验</span>
-            </div>
-            <el-button 
-              v-if="order.status === 'cancelled'" 
-              type="info" 
-              size="large" 
-              disabled
-            >
-              订单已退订
-            </el-button>
-          </div>
+          <h3>订单信息</h3>
+          <OrderCard
+            :order="order"
+            :venue-name="venueName"
+            :cancel-time-limit="4"
+            :show-actions="false"
+          />
         </div>
       </div>
       
@@ -150,13 +100,6 @@
     
     <AdminNav />
     
-    <!-- 二维码模态框 -->
-    <QRCodeModal
-      v-model:visible="qrCodeModalVisible"
-      :order-number="orderNumber"
-      :status="order?.status || 'pending'"
-      title="订单二维码"
-    />
     <ScanQRCodeModal
       v-model:visible="scanModalVisible"
       @scanned="handleScan"
@@ -167,18 +110,18 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Check, Promotion } from '@element-plus/icons-vue'
+import { Search, Check } from '@element-plus/icons-vue'
 import AdminNav from '@/components/AdminNav.vue'
-import QRCodeModal from '@/components/QRCodeModal.vue'
 import ScanQRCodeModal from '@/components/ScanQRCodeModal.vue'
-import { verifyOrder as verifyOrderApi } from '@/api/admin'
+import OrderCard from '@/components/OrderCard.vue'
+import { getOrderForVerification, verifyOrder as verifyOrderApi } from '@/api/admin'
 import { formatDateTime, getEndTime } from '@/utils/timeUtils'
 
 const orderNumber = ref('')
 const order = ref(null)
 const searched = ref(false)
-const qrCodeModalVisible = ref(false)
 const scanModalVisible = ref(false)
+const venueName = ref('运动场馆') // 场馆名称
 
 const searchOrder = async () => {
   if (!orderNumber.value.trim()) {
@@ -187,15 +130,20 @@ const searchOrder = async () => {
   }
   
   try {
-    const response = await verifyOrderApi(orderNumber.value)
-    console.log('订单查询返回：', response)
-    console.log('response.data:', response.data)
-    console.log('response.data.user:', response.data?.user)
-    console.log('response.data.sessions:', response.data?.sessions)
-    // 后端返回的是 ApiResponse 包装的数据，需要访问 data 字段
-    order.value = response.data
-    searched.value = true
-    ElMessage.success('订单查询成功')
+    const response = await getOrderForVerification(orderNumber.value)
+    
+    // 检查响应是否成功
+    if (response.success) {
+      // 后端返回的是 ApiResponse 包装的数据，需要访问 data 字段
+      order.value = response.data
+      searched.value = true
+      ElMessage.success('订单查询成功')
+    } else {
+      // 当 success 为 false 时，显示后端返回的具体错误信息
+      order.value = null
+      searched.value = true
+      ElMessage.error(response.message || '订单查询失败')
+    }
   } catch (error) {
     console.error('订单查询失败:', error)
     order.value = null
@@ -206,7 +154,7 @@ const searchOrder = async () => {
 
 const verifyOrder = async () => {
   try {
-    const response = await verifyOrderApi(orderNumber.value, { verified: true })
+    const response = await verifyOrderApi(orderNumber.value)
     console.log('核验响应：', response)
     if (response.success) {
       // 核验成功后重新查询订单以获取最新状态
@@ -220,13 +168,7 @@ const verifyOrder = async () => {
   }
 }
 
-const showQRCode = () => {
-  if (!order.value) {
-    ElMessage.warning('请先查询订单')
-    return
-  }
-  qrCodeModalVisible.value = true
-}
+
 
 const handleScan = (scannedOrderNumber) => {
   orderNumber.value = scannedOrderNumber
@@ -234,28 +176,7 @@ const handleScan = (scannedOrderNumber) => {
   searchOrder()
 }
 
-const getStatusType = (status) => {
-  switch (status) {
-    case 'pending': return 'warning'
-    case 'completed': return 'success'
-    case 'cancelled': return 'info'
-    default: return 'info'
-  }
-}
 
-const getStatusText = (status) => {
-  switch (status) {
-    case 'pending': return '待确认'
-    case 'completed': return '已确认'
-    case 'cancelled': return '已退订'
-    default: return '未知'
-  }
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>
@@ -338,16 +259,30 @@ const formatDate = (dateString) => {
   gap: 10px;
 }
 
+.user-info-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
 .label {
   font-weight: 500;
   color: #606266;
-  min-width: 70px;
+  min-width: 80px;
+  text-align: left;
 }
 
 .value {
   color: #303133;
-  flex: 1;
   font-size: 14px;
+  text-align: right;
+  flex: 1;
 }
 
 .price {
@@ -355,42 +290,52 @@ const formatDate = (dateString) => {
   font-weight: 600;
 }
 
-.verification-actions {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.verification-actions h3 {
-  margin: 0 0 20px 0;
-  color: #303133;
-  font-size: 18px;
-  font-weight: 600;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 10px;
-}
-
 .action-buttons {
   display: flex;
-  gap: 10px;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .action-buttons .el-button {
   width: 100%;
-}
-
-.status-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #909399;
+  min-width: auto;
+  height: 40px;
   font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.3s ease;
 }
 
-.status-info .el-icon {
-  color: #67c23a;
+.primary-action {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
 }
+
+.primary-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(103, 194, 58, 0.4);
+}
+
+.status-button {
+  background: #f0f9ff;
+  border-color: #b3d8ff;
+  color: #409eff;
+  cursor: not-allowed;
+}
+
+.status-button:hover {
+  background: #f0f9ff;
+  border-color: #b3d8ff;
+  color: #409eff;
+  transform: none;
+  box-shadow: none;
+}
+
+
+
+
 
 .no-result {
   background: white;
@@ -449,45 +394,35 @@ const formatDate = (dateString) => {
   
   .label {
     font-size: 12px;
+    min-width: 60px;
+    text-align: left;
   }
   
   .value {
     font-size: 14px;
+    text-align: right;
+    flex: 1;
   }
+  
+
   
   .action-buttons {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
   
   .action-buttons .el-button {
     width: 100%;
+    min-width: auto;
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  .status-info {
+    text-align: center;
+    justify-content: center;
   }
 }
 
-/* 场次列表样式 */
-.sessions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
 
-.session-item {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 15px;
-  background: #fafafa;
-}
-
-.session-header {
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-.session-number {
-  font-weight: 600;
-  color: #FF6633;
-  font-size: 14px;
-}
 </style> 

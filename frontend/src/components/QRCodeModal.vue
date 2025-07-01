@@ -10,7 +10,7 @@
   >
     <div class="qrcode-container">
       <div v-if="loading" class="loading-container">
-        <el-loading-spinner />
+        <el-icon class="is-loading"><Loading /></el-icon>
         <p>生成二维码中...</p>
       </div>
       
@@ -45,7 +45,6 @@
           <el-button 
             @click="downloadQRCode" 
             type="primary" 
-            size="small"
             :icon="Download"
           >
             下载二维码
@@ -53,27 +52,26 @@
           <el-button 
             @click="copyQRCode" 
             type="success" 
-            size="small"
             :icon="CopyDocument"
           >
             复制二维码
           </el-button>
+          <el-button 
+          @click="closeModal" 
+          type="default"
+          >
+            关闭
+          </el-button>
         </div>
       </div>
     </div>
-    
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="closeModal">关闭</el-button>
-      </div>
-    </template>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Warning, Download, CopyDocument } from '@element-plus/icons-vue'
+import { Warning, Download, CopyDocument, Loading } from '@element-plus/icons-vue'
 import { generateOrderQRCode, downloadQRCode as downloadQRCodeUtil, copyQRCodeToClipboard } from '@/utils/qrCodeUtils'
 
 const props = defineProps({
@@ -215,6 +213,11 @@ const getStatusText = (status) => {
   gap: 15px;
 }
 
+.loading-container .el-icon {
+  font-size: 32px;
+  color: #FF6633;
+}
+
 .loading-container p {
   color: #606266;
   font-size: 14px;
@@ -282,9 +285,14 @@ const getStatusText = (status) => {
 
 .qrcode-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
   width: 100%;
+  flex-wrap: nowrap;
+}
+
+.qrcode-actions .el-button {
+  min-width: 100px;
 }
 
 .dialog-footer {
@@ -294,11 +302,13 @@ const getStatusText = (status) => {
 /* 移动端优化 */
 @media (max-width: 768px) {
   .qrcode-actions {
-    flex-direction: column;
+    flex-direction: row;
+    gap: 8px;
   }
   
   .qrcode-actions .el-button {
-    width: 100%;
+    flex: 1;
+    min-width: 80px;
   }
   
   .qrcode-image {

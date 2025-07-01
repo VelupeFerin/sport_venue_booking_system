@@ -48,9 +48,28 @@ export const getEndTime = (startTime) => {
  */
 export const formatTimeRange = (startTime) => {
   if (!startTime) return '-'
-  const start = formatDateTime(startTime)
-  const end = formatDateTime(getEndTime(startTime))
-  return `${start} - ${end}`
+  const startDate = new Date(startTime)
+  const endDate = new Date(getEndTime(startTime))
+  
+  // 格式化日期部分
+  const dateStr = startDate.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  
+  // 格式化时间部分
+  const startTimeStr = startDate.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  const endTimeStr = endDate.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  return `${dateStr} ${startTimeStr}-${endTimeStr}`
 }
 
 // 验证营业时间格式

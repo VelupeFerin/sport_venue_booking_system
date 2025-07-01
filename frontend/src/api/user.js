@@ -4,6 +4,31 @@ import { useUserStore } from '../store/user'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
+// 验证token字符
+const validateTokenCharacters = (tokenStr) => {
+  if (!tokenStr) return true
+  
+  // JWT token应该以'eyJ'开头
+  if (!tokenStr.startsWith('eyJ')) {
+    console.error('Token does not start with "eyJ" (invalid JWT format)')
+    return false
+  }
+  
+  for (let i = 0; i < tokenStr.length; i++) {
+    const c = tokenStr.charAt(i)
+    if (c > 127) {
+      console.error(`Token contains non-ASCII character at position ${i}: ${c} (code: ${c.charCodeAt(0)})`)
+      return false
+    }
+    // JWT token应该只包含字母、数字、-、_、.、=
+    if (!/[a-zA-Z0-9\-_.=]/.test(c)) {
+      console.error(`Token contains invalid character at position ${i}: ${c} (code: ${c.charCodeAt(0)})`)
+      return false
+    }
+  }
+  return true
+}
+
 // 创建axios实例
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +43,13 @@ apiClient.interceptors.request.use(
   (config) => {
     const userStore = useUserStore()
     if (userStore.token) {
+      // 验证token字符
+      if (!validateTokenCharacters(userStore.token)) {
+        console.error('Invalid token detected in request interceptor, clearing user info')
+        userStore.clearUserInfo()
+        ElMessage.error('登录状态异常，请重新登录')
+        return Promise.reject(new Error('Invalid token'))
+      }
       config.headers.Authorization = `Bearer ${userStore.token}`
     }
     return config
@@ -33,7 +65,12 @@ apiClient.interceptors.response.use(
     return response.data
   },
   (error) => {
-    // 不要在这里自动清除用户状态，让具体的API调用处理错误
+    if (error.response && error.response.status === 401) {
+      // Token无效或过期，清除用户状态
+      const userStore = useUserStore()
+      userStore.clearUserInfo()
+      ElMessage.error('登录已过期，请重新登录')
+    }
     console.error('API请求错误:', error)
     return Promise.reject(error)
   }
@@ -51,8 +88,11 @@ const userApi = {
   },
   
   // 获取用户订单列表
-  getUserOrders() {
-    return apiClient.get('/user/orders')
+  getUserOrders(page = null, size = null) {
+    const params = {}
+    if (page !== null) params.page = page
+    if (size !== null) params.size = size
+    return apiClient.get('/user/orders', { params })
   },
   
   // 取消订单
@@ -63,16 +103,6 @@ const userApi = {
   // 创建订单
   createOrder(sessionIds) {
     return apiClient.post('/user/orders', { sessionIds })
-  },
-  
-  // 获取营业时间配置（公开API）
-  getBusinessHours() {
-    return apiClient.get('/user/business-hours')
-  },
-  
-  // 获取系统配置（包括最大场次数等）
-  getSystemConfig() {
-    return apiClient.get('/user/business-hours')
   },
   
   // 检查是否有未核验的订单
@@ -93,9 +123,9 @@ const publicApi = {
     return apiClient.get(`/sessions/available/date/${date}`)
   },
   
-  // 获取营业时间配置（公开API）
-  getBusinessHours() {
-    return apiClient.get('/user/business-hours')
+  // 获取系统配置（公开API）
+  getSystemConfig() {
+    return apiClient.get('/config')
   }
 }
 
@@ -110,4 +140,4 @@ export const getUserInfo = userApi.getUserInfo
 export const updateUserInfo = userApi.updateUserInfo
 export const getUserOrders = userApi.getUserOrders
 export const cancelUserOrder = userApi.cancelUserOrder
-export const getBusinessHours = userApi.getBusinessHours 
+export const getSystemConfig = publicApi.getSystemConfig 

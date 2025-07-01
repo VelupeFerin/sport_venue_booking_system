@@ -85,15 +85,25 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
+  // 检查是否需要认证
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next('/login')
-  } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
-    next('/user') // 非管理员重定向到用户页面
-  } else if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn) {
-    next('/home')
-  } else {
-    next()
+    return
   }
+  
+  // 检查是否需要管理员权限
+  if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    next('/user') // 非管理员重定向到用户页面
+    return
+  }
+  
+  // 已登录用户访问登录/注册页面时重定向到首页
+  if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn) {
+    next('/home')
+    return
+  }
+  
+  next()
 })
 
 export default router 
