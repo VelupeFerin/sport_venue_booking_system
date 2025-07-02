@@ -34,6 +34,10 @@
               <span>已预约</span>
             </div>
             <div class="legend-item">
+              <div class="legend-color expired"></div>
+              <span>已过期</span>
+            </div>
+            <div class="legend-item">
               <div class="legend-color unavailable"></div>
               <span>不可预约</span>
             </div>
@@ -86,6 +90,7 @@
               <ul>
                 <li>点击可预约的场次进行选择</li>
                 <li>已预约的场次不可重复预约</li>
+                <li>已过期的场次显示历史价格和备注信息</li>
                 <li>不可预约的场次为系统维护或未开放时段</li>
                 <li>价格单位为元/小时</li>
                 <li>单次订单最多可选择 {{ maxOrderSessions }} 个场次</li>
@@ -534,6 +539,11 @@ const confirmBooking = async () => {
 .legend-color.booked {
   background: #ffe7ba;
   border: 1px solid #fa8c16;
+}
+
+.legend-color.expired {
+  background: #ffccc7;
+  border: 1px solid #cf1322;
 }
 
 .legend-color.unavailable {

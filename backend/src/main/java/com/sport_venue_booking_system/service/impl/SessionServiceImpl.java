@@ -178,9 +178,10 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public void clearExpiredSessions() {
         try {
-            LocalDateTime currentTime = LocalDateTime.now();
-            sessionRepository.deleteExpiredSessions(currentTime);
-            logger.info("已清除过期场次");
+            // 获取当天开始时间（00:00:00）
+            LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+            sessionRepository.deleteExpiredSessions(todayStart);
+            logger.info("已清除早于 {} 的过期场次", todayStart);
         } catch (Exception e) {
             logger.error("清除过期场次失败: {}", e.getMessage(), e);
         }

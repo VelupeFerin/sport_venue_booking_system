@@ -131,17 +131,36 @@ const getSession = (courtName, startTime) => {
   )
 }
 
+// 检查场次是否已过期
+const isSessionExpired = (session) => {
+  if (!session || !session.start_time) {
+    return false
+  }
+  
+  const sessionStartTime = new Date(session.start_time)
+  const now = new Date()
+  
+  // 如果场次开始时间早于当前时间，则已过期
+  return sessionStartTime < now
+}
+
 const getSessionStatus = (courtName, startTime) => {
   const session = getSession(courtName, startTime)
   if (!session) return '不可预约'
   if (session.is_booked) return '已预约'
+  
+  // 检查是否已过期（只在用户模式下生效）
+  if (!props.isAdminMode && isSessionExpired(session)) {
+    return '已过期'
+  }
+  
   if (!session.is_active) return '不可预约'
   return '可预约'
 }
 
 const getSessionPrice = (courtName, startTime) => {
   const session = getSession(courtName, startTime)
-  // 管理员模式下显示所有价格，用户模式下显示可预约和已预约的价格
+  // 管理员模式下显示所有价格，用户模式下显示可预约、已预约和已过期的价格
   if (props.isAdminMode) {
     if (session) {
       return session.price || null
@@ -152,8 +171,9 @@ const getSessionPrice = (courtName, startTime) => {
       return selectedVirtual?.price || null
     }
   }
-  // 用户模式下显示可预约和已预约的价格，不显示不可预约的价格
-  if (!session || !session.is_active) return null
+  // 用户模式下显示可预约、已预约和已过期的价格，不显示不可预约的价格
+  if (!session) return null
+  if (!session.is_active && !(!props.isAdminMode && isSessionExpired(session))) return null
   return session.price
 }
 
@@ -182,6 +202,12 @@ const getSessionClass = (courtName, startTime) => {
     return 'unavailable'
   }
   if (session.is_booked) return 'booked'
+  
+  // 检查是否已过期（只在用户模式下生效）
+  if (!props.isAdminMode && isSessionExpired(session)) {
+    return 'expired'
+  }
+  
   if (!session.is_active) return 'unavailable'
   return 'available'
 }
@@ -431,6 +457,29 @@ const handleCellClick = (courtName, startTime) => {
 }
 
 .unavailable:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.expired {
+  background: #fff2f0;
+}
+
+.expired .session-status {
+  background: #ffccc7;
+  color: #cf1322;
+}
+
+.expired .session-price {
+  color: #cf1322;
+  font-style: italic;
+}
+
+.expired {
+  cursor: not-allowed;
+}
+
+.expired:hover {
   transform: none;
   box-shadow: none;
 }
