@@ -1,11 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
+import userApi from '../api/user'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
   const token = ref(localStorage.getItem('token') || '')
   const username = ref(localStorage.getItem('username') || '')
   const isAdmin = ref(localStorage.getItem('isAdmin') === 'true')
+  const isLoading = ref(false)
+  const isInitialized = ref(false)
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
@@ -33,6 +37,51 @@ export const useUserStore = defineStore('user', () => {
       }
     }
     return true
+  }
+
+  // 验证token有效性
+  const validateToken = async () => {
+    if (!token.value) return false
+    
+    try {
+      const response = await userApi.getUserInfo()
+      return response.success
+    } catch (error) {
+      console.error('Token validation failed:', error)
+      return false
+    }
+  }
+
+  // 初始化用户状态
+  const initializeUser = async () => {
+    if (isInitialized.value) return
+    
+    isLoading.value = true
+    try {
+      // 验证当前token
+      if (token.value && !validateTokenCharacters(token.value)) {
+        console.error('Invalid token found in localStorage, clearing')
+        clearUserInfo()
+        isInitialized.value = true
+        return
+      }
+      
+      // 如果有token，验证其有效性
+      if (token.value) {
+        const isValid = await validateToken()
+        if (!isValid) {
+          console.error('Token validation failed, clearing user info')
+          clearUserInfo()
+          ElMessage.warning('登录已过期，请重新登录')
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error)
+      clearUserInfo()
+    } finally {
+      isLoading.value = false
+      isInitialized.value = true
+    }
   }
 
   // 方法
@@ -93,11 +142,15 @@ export const useUserStore = defineStore('user', () => {
     token,
     username,
     isAdmin,
+    isLoading,
+    isInitialized,
     // 计算属性
     isLoggedIn,
     // 方法
     setUserInfo,
     clearUserInfo,
-    updateUsername
+    updateUsername,
+    validateToken,
+    initializeUser
   }
 }) 
