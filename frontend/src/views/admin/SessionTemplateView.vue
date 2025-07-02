@@ -269,7 +269,17 @@ const courtRules = {
 
 const editRules = {
   price: [
-    { required: true, message: '请输入价格', trigger: 'blur' }
+    { required: true, message: '请输入价格', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        if (value < 0) {
+          callback(new Error('价格不能为负数'))
+        } else {
+          callback()
+        }
+      }, 
+      trigger: 'blur' 
+    }
   ]
 }
 
@@ -511,8 +521,15 @@ const handleFileChange = (file) => {
         })
       }
       
-      // 导入数据
+      // 验证导入数据
       if (importData.length > 0) {
+        // 检查是否有负数价格
+        const invalidData = importData.filter(data => data.price < 0)
+        if (invalidData.length > 0) {
+          ElMessage.error(`导入失败：发现 ${invalidData.length} 个模板的价格为负数，请检查数据`)
+          return
+        }
+        
         const promises = importData.map(data => createTemplate(data))
         await Promise.all(promises)
         ElMessage.success(`成功导入 ${importData.length} 个模板`)
@@ -533,6 +550,12 @@ const saveEdit = async () => {
     // 单个场次编辑时进行表单验证
     if (!isBatchEdit.value) {
       await editFormRef.value.validate()
+    } else {
+      // 批量编辑时验证价格
+      if (shouldEditPrice.value && editForm.value.price < 0) {
+        ElMessage.error('价格不能为负数')
+        return
+      }
     }
     
     // 统一使用批量编辑模式

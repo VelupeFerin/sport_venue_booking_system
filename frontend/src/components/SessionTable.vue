@@ -37,7 +37,7 @@
                 <div class="session-status">
                   {{ getSessionStatus(court, timeSlot.startTime) }}
                 </div>
-                <div v-if="getSessionPrice(court, timeSlot.startTime)" class="session-price">
+                <div v-if="getSessionPrice(court, timeSlot.startTime) !== null" class="session-price">
                   ¥{{ getSessionPrice(court, timeSlot.startTime) }}
                 </div>
                 <div v-if="getSessionNote(court, timeSlot.startTime)" class="session-note">
@@ -163,18 +163,18 @@ const getSessionPrice = (courtName, startTime) => {
   // 管理员模式下显示所有价格，用户模式下显示可预约、已预约和已过期的价格
   if (props.isAdminMode) {
     if (session) {
-      return session.price || null
+      return session.price !== undefined && session.price !== null ? session.price : null
     } else {
       // 对于不存在的场次，检查是否有选中的虚拟场次
       const virtualSessionId = `virtual-${courtName}-${startTime}`
       const selectedVirtual = props.selectedSessions.find(selected => selected.id === virtualSessionId)
-      return selectedVirtual?.price || null
+      return selectedVirtual?.price !== undefined && selectedVirtual?.price !== null ? selectedVirtual.price : null
     }
   }
   // 用户模式下显示可预约、已预约和已过期的价格，不显示不可预约的价格
   if (!session) return null
   if (!session.is_active && !(!props.isAdminMode && isSessionExpired(session))) return null
-  return session.price
+  return session.price !== undefined && session.price !== null ? session.price : null
 }
 
 const getSessionNote = (courtName, startTime) => {
