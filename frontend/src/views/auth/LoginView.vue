@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h2>运动场馆预订系统</h2>
+        <h2>登录</h2>
         <p>请登录您的账户</p>
       </div>
       
@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -73,6 +73,11 @@ const loginForm = reactive({
 
 const loading = ref(false)
 const loginFormRef = ref()
+
+// 设置页面标题
+onMounted(() => {
+  document.title = '登录'
+})
 
 const rules = {
   username: [

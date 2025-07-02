@@ -2,7 +2,7 @@
   <div class="register-container">
     <div class="register-card">
       <div class="register-header">
-        <h2>运动场馆预订系统</h2>
+        <h2>注册</h2>
         <p>创建您的账户</p>
       </div>
       
@@ -79,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Phone } from '@element-plus/icons-vue'
@@ -95,6 +95,11 @@ const registerForm = reactive({
 
 const loading = ref(false)
 const registerFormRef = ref()
+
+// 设置页面标题
+onMounted(() => {
+  document.title = '用户注册'
+})
 
 // 手机号验证函数
 const validatePhone = (rule, value, callback) => {

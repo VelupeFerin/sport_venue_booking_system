@@ -90,6 +90,9 @@ const totalPages = ref(0)
 let scrollTimeout = null
 
 onMounted(async () => {
+  // 设置页面标题
+  document.title = '我的订单'
+  
   await Promise.all([
     loadOrders(),
     loadCancelTimeLimit(),
@@ -225,8 +228,6 @@ const loadVenueName = async () => {
     venueName.value = '运动场馆'
   }
 }
-
-
 
 const showQRCode = (order) => {
   selectedOrderNumber.value = order.orderNumber

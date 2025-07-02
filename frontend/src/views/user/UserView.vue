@@ -144,6 +144,11 @@ const userFormRef = ref()
 const router = useRouter()
 const userStore = useUserStore()
 
+// 设置页面标题
+onMounted(() => {
+  document.title = '个人中心'
+})
+
 // 用户信息（只读显示）
 const userInfo = reactive({
   username: '',

@@ -10,5 +10,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrderRequest {
-    private List<Long> sessionIds; // 要预订的场次ID列表
+    private List<Long> sessionIds; // 要预约的场次ID列表
 } 

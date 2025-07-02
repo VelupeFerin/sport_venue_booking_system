@@ -33,7 +33,7 @@ public interface SessionService {
     List<Session> getSessionsBetween(LocalDateTime start, LocalDateTime end);
     
     /**
-     * 获取可预订的场次
+     * 获取可预约的场次
      */
     List<Session> getAvailableSessions();
     

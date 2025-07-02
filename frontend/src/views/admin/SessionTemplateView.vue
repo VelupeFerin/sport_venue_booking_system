@@ -327,6 +327,7 @@ const isBatchEdit = computed(() => {
 onMounted(async () => {
   await loadTemplates()
   await loadBusinessHours()
+  document.title = '场次模板管理'
 })
 
 const loadTemplates = async () => {

@@ -123,6 +123,9 @@ const configRules = {
 }
 
 onMounted(async () => {
+  // 设置页面标题
+  document.title = '系统配置'
+  
   await loadConfig()
 })
 

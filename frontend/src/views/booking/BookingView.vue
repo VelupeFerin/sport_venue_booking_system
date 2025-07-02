@@ -135,6 +135,11 @@ import { parseBusinessHours } from '../../utils/timeUtils'
 
 const userStore = useUserStore()
 
+// 设置页面标题
+onMounted(() => {
+  document.title = '场地预约'
+})
+
 // 检查是否已登录
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 

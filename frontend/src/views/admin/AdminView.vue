@@ -13,7 +13,7 @@
             返回主页
           </el-button>
         </div>
-        <p>欢迎使用运动场馆预约系统管理后台</p>
+        <p>欢迎使用预约系统管理后台</p>
       </div>
       
       <div class="stats-grid">
@@ -90,6 +90,9 @@ import { getStats } from '@/api/admin'
 const stats = ref({})
 
 onMounted(async () => {
+  // 设置页面标题
+  document.title = '管理员控制台'
+  
   try {
     const response = await getStats()
     stats.value = response.data

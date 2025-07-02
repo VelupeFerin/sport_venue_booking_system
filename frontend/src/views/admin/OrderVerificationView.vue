@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Check } from '@element-plus/icons-vue'
 import AdminNav from '@/components/AdminNav.vue'
@@ -119,6 +119,11 @@ const order = ref(null)
 const searched = ref(false)
 const scanModalVisible = ref(false)
 const venueName = ref('运动场馆') // 场馆名称
+
+// 设置页面标题
+onMounted(() => {
+  document.title = '订单核验'
+})
 
 const searchOrder = async () => {
   if (!orderNumber.value.trim()) {
@@ -165,15 +170,11 @@ const verifyOrder = async () => {
   }
 }
 
-
-
 const handleScan = (scannedOrderNumber) => {
   orderNumber.value = scannedOrderNumber
   scanModalVisible.value = false
   searchOrder()
 }
-
-
 </script>
 
 <style scoped>
@@ -330,10 +331,6 @@ const handleScan = (scannedOrderNumber) => {
   box-shadow: none;
 }
 
-
-
-
-
 .no-result {
   background: white;
   padding: 40px 20px;
@@ -401,8 +398,6 @@ const handleScan = (scannedOrderNumber) => {
     flex: 1;
   }
   
-
-  
   .action-buttons {
     flex-direction: column;
     gap: 12px;
@@ -420,6 +415,4 @@ const handleScan = (scannedOrderNumber) => {
     justify-content: center;
   }
 }
-
-
 </style> 

@@ -2,7 +2,7 @@
   <div class="home-container">
     <div class="header">
       <div class="header-content">
-        <h1>{{ venueName }}预订系统</h1>
+        <h1>{{ venueName }}预约系统</h1>
         <div class="user-info" v-if="userStore.isLoggedIn">
           <span>欢迎，{{ userStore.username }}</span>
           <el-button class="logout-btn" size="small" @click="handleLogout">退出登录</el-button>
@@ -13,7 +13,7 @@
     <div class="main-content">
       <!-- 统一显示欢迎页面 -->
       <div class="welcome-card">
-        <h2>欢迎使用{{ venueName }}预订系统</h2>
+        <h2>欢迎使用{{ venueName }}预约系统</h2>
         <p>专业的运动场馆在线预约平台，为您提供便捷的场地预订服务</p>
         <div class="feature-list">
           <div class="feature-item">
@@ -69,6 +69,11 @@ const router = useRouter()
 const userStore = useUserStore()
 const venueName = ref('运动场馆')
 
+// 设置页面标题
+onMounted(() => {
+  document.title = '首页'
+})
+
 const handleLogout = () => {
   userStore.clearUserInfo()
   ElMessage.success('已退出登录')
@@ -84,6 +89,8 @@ const loadVenueName = async () => {
       const configs = response.data
       if (configs.venue_name) {
         venueName.value = configs.venue_name
+        // 更新页面标题
+        document.title = `首页 - ${venueName.value}预订系统`
       }
     }
   } catch (error) {
