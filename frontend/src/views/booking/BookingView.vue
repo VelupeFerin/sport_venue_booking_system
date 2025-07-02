@@ -90,6 +90,7 @@
                 <li>价格单位为元/小时</li>
                 <li>单次订单最多可选择 {{ maxOrderSessions }} 个场次</li>
                 <li>有未核验订单时无法进行新的预约</li>
+                <li>距场次开始时间不足 {{ cancelTimeLimit }} 小时的订单不可取消</li>
                 <li>确认预约后将生成订单</li>
               </ul>
             </div>
@@ -126,12 +127,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import BottomNav from '../../components/BottomNav.vue'
 import SessionTable from '../../components/SessionTable.vue'
-import { useUserStore } from '../../store/user'
+import { useUserStore } from '@/store/user.js'
 import userApi, { publicApi } from '../../api/user'
-import { parseBusinessHours } from '../../utils/timeUtils'
+import { parseBusinessHours } from '@/utils/timeUtils.js'
 
 const userStore = useUserStore()
 
@@ -168,6 +169,9 @@ const businessHours = ref({ startHour: 9, endHour: 21 })
 
 // 最大订单场次数配置
 const maxOrderSessions = ref(3)
+
+// 退订时间要求配置
+const cancelTimeLimit = ref(4)
 
 // 是否有未核验订单
 const hasPendingOrders = ref(false)
@@ -237,6 +241,11 @@ const loadBusinessHours = async () => {
       if (config.max_order_sessions) {
         maxOrderSessions.value = parseInt(config.max_order_sessions) || 3
       }
+      
+      // 加载退订时间要求配置
+      if (config.cancel_time_limit) {
+        cancelTimeLimit.value = parseInt(config.cancel_time_limit) || 4
+      }
     }
   } catch (error) {
     console.warn('加载系统配置失败，使用默认值:', error)
@@ -304,7 +313,7 @@ const handleSessionSelect = (session) => {
   
   // 如果有未核验的订单，禁止选择场次
   if (hasPendingOrders.value) {
-    ElMessage.warning('您有未核验的订单，请等待核验完成后再进行新的预约')
+    ElMessage.warning('您有未核验的订单，请核验完成后再进行新的预约')
     return
   }
   
@@ -340,6 +349,42 @@ const confirmBooking = async () => {
     return
   }
   
+  // 检查是否有场次距离开始时间不足退订时间要求
+  const now = new Date()
+  const problematicSessions = []
+  
+  for (const session of selectedSessions.value) {
+    const sessionStartTime = new Date(session.start_time)
+    const hoursUntilStart = (sessionStartTime - now) / (1000 * 60 * 60)
+    
+    if (hoursUntilStart < cancelTimeLimit.value) {
+      problematicSessions.push({
+        courtName: session.court_name,
+        startTime: session.start_time,
+        hoursUntilStart: Math.ceil(hoursUntilStart)
+      })
+    }
+  }
+  
+  // 如果有场次时间不足，显示确认对话框
+  if (problematicSessions.length > 0) {
+    try {
+      await ElMessageBox.confirm(
+        `您的订单存在场次距离开始时间已不足${cancelTimeLimit.value}小时，预约后将不能取消！是否确认？`,
+        '确认预约',
+        {
+          confirmButtonText: '确认预约',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    } catch (error) {
+      if (error === 'cancel') {
+        return // 用户取消预约
+      }
+    }
+  }
+  
   confirming.value = true
   try {
     // 提取场次ID列表
@@ -352,6 +397,7 @@ const confirmBooking = async () => {
       ElMessage.success('预约成功！订单已创建')
       selectedSessions.value = [] // 清空选中的场次
       loadSessions() // 重新加载场次数据以更新状态
+      checkPendingOrders() // 重新检查是否有未核验订单
     } else {
       ElMessage.error('预约失败: ' + response.message)
     }

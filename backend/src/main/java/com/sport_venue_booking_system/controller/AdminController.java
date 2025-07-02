@@ -9,6 +9,7 @@ import com.sport_venue_booking_system.service.OrderService;
 import com.sport_venue_booking_system.service.SessionTemplateService;
 import com.sport_venue_booking_system.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     
     @Autowired

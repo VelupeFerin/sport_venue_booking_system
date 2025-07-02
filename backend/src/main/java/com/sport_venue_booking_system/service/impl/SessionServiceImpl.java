@@ -202,7 +202,7 @@ public class SessionServiceImpl implements SessionService {
         // 生成次日场次
         boolean success = generateNextDaySessions();
         if (success) {
-            logger.info("场次初始化完成");
+            logger.info("场次初始化成功");
         } else {
             logger.error("场次初始化失败");
         }
