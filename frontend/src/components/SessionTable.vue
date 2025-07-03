@@ -229,7 +229,7 @@ const isSessionSelected = (courtName, startTime) => {
 
 const handleCellClick = (courtName, startTime) => {
   const session = getSession(courtName, startTime)
-  // 管理员模式下所有场次都可以选中，用户模式下只有可预约的场次可以选中
+  // 管理员模式下所有场次都可以选中，用户模式下只有可预约且未过期的场次可以选中
   if (props.isAdminMode) {
     if (session) {
       emit('session-select', session)
@@ -248,7 +248,8 @@ const handleCellClick = (courtName, startTime) => {
       emit('session-select', virtualSession)
     }
   } else {
-    if (session && session.is_active && !session.is_booked) {
+    // 用户模式下只有可预约、未预约且未过期的场次可以选中
+    if (session && session.is_active && !session.is_booked && !isSessionExpired(session)) {
       emit('session-select', session)
     }
   }

@@ -294,6 +294,7 @@ public class OrderServiceImpl implements OrderService {
         // 验证场次是否存在且可预订
         List<Session> sessions = new ArrayList<>();
         BigDecimal totalPrice = BigDecimal.ZERO;
+        LocalDateTime now = LocalDateTime.now();
         
         for (Long sessionId : sessionIds) {
             Session session = sessionService.getSessionById(sessionId);
@@ -305,6 +306,10 @@ public class OrderServiceImpl implements OrderService {
             }
             if (!session.getIsActive()) {
                 throw new RuntimeException("场次不可预订: " + session.getCourtName() + " " + session.getStartTime());
+            }
+            // 检查场次是否已过期
+            if (session.getStartTime().isBefore(now)) {
+                throw new RuntimeException("场次已过期: " + session.getCourtName() + " " + session.getStartTime());
             }
             sessions.add(session);
             totalPrice = totalPrice.add(session.getPrice());
