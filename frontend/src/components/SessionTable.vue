@@ -149,12 +149,14 @@ const getSessionStatus = (courtName, startTime) => {
   if (!session) return '不可预约'
   if (session.is_booked) return '已预约'
   
-  // 检查是否已过期（只在用户模式下生效）
+  // 先检查是否不可预约，如果不可预约则不显示已过期状态
+  if (!session.is_active) return '不可预约'
+  
+  // 检查是否已过期（只在用户模式下生效，且场次必须是可预约的）
   if (!props.isAdminMode && isSessionExpired(session)) {
     return '已过期'
   }
   
-  if (!session.is_active) return '不可预约'
   return '可预约'
 }
 
@@ -173,7 +175,7 @@ const getSessionPrice = (courtName, startTime) => {
   }
   // 用户模式下显示可预约、已预约和已过期的价格，不显示不可预约的价格
   if (!session) return null
-  if (!session.is_active && !(!props.isAdminMode && isSessionExpired(session))) return null
+  if (!session.is_active) return null
   return session.price !== undefined && session.price !== null ? session.price : null
 }
 
@@ -203,12 +205,14 @@ const getSessionClass = (courtName, startTime) => {
   }
   if (session.is_booked) return 'booked'
   
-  // 检查是否已过期（只在用户模式下生效）
+  // 先检查是否不可预约，如果不可预约则不显示已过期样式
+  if (!session.is_active) return 'unavailable'
+  
+  // 检查是否已过期（只在用户模式下生效，且场次必须是可预约的）
   if (!props.isAdminMode && isSessionExpired(session)) {
     return 'expired'
   }
   
-  if (!session.is_active) return 'unavailable'
   return 'available'
 }
 
